@@ -10,7 +10,6 @@ const readline = require('readline')
 const color = require('ansi-color').set
 const mc = require('minecraft-protocol')
 const states = mc.states
-const colors = require('./lib/colors')
 const mcClient = require('./lib/minecraftClient')
 
 JSON.minify = JSON.minify || require('node-json-minify')
