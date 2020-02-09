@@ -1,180 +1,109 @@
+var express = require('express');
+var app = express();
+var fs = require('fs');
+var path = require('path');
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+var port = process.env.PORT || 3000;
+
 const readline = require('readline')
 const color = require('ansi-color').set
 const mc = require('minecraft-protocol')
 const states = mc.states
-const util = require('util')
+const colors = require('./lib/colors')
+const mcClient = require('./lib/minecraftClient')
 
-const colors = {
-  black: 'black+white_bg',
-  dark_blue: 'blue',
-  dark_green: 'green',
-  dark_aqua: 'cyan',
-  dark_red: 'red',
-  dark_purple: 'magenta',
-  gold: 'yellow',
-  gray: 'black+white_bg',
-  dark_gray: 'black+white_bg',
-  blue: 'blue',
-  green: 'green',
-  aqua: 'cyan',
-  red: 'red',
-  light_purple: 'magenta',
-  yellow: 'yellow',
-  white: 'white',
-  obfuscated: 'blink',
-  bold: 'bold',
-  strikethrough: '',
-  underlined: 'underlined',
-  italic: '',
-  reset: 'white+black_bg'
-}
+JSON.minify = JSON.minify || require('node-json-minify')
+const config = JSON.parse(JSON.minify(fs.readFileSync(path.resolve('./config.json'), {encoding: 'utf8'})))
 
-const dictionary = {
-  'chat.stream.emote': '(%s) * %s %s',
-  'chat.stream.text': '(%s) <%s> %s',
-  'chat.type.achievement': '%s has just earned the achievement %s',
-  'chat.type.admin': '[%s: %s]',
-  'chat.type.announcement': '[%s] %s',
-  'chat.type.emote': '* %s %s',
-  'chat.type.text': '<%s> %s'
-}
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-})
-
-function printHelp () {
-  console.log('usage: node client_chat.js <hostname> <port> <user> [<password>]')
-}
-
-if (process.argv.length < 5) {
-  console.log('Too few arguments!')
-  printHelp()
-  process.exit(1)
-}
-
-process.argv.forEach(function (val) {
-  if (val === '-h') {
-    printHelp()
-    process.exit(0)
-  }
-})
-
-let host = process.argv[2]
-let port = parseInt(process.argv[3])
-const user = process.argv[4]
-const passwd = process.argv[5]
-
-if (host.indexOf(':') !== -1) {
-  port = host.substring(host.indexOf(':') + 1)
-  host = host.substring(0, host.indexOf(':'))
-}
-
-console.log('connecting to ' + host + ':' + port)
-console.log('user: ' + user)
+console.log(color('Connecting to ' + config.host + ':' + config.port, 'green'))
+console.log(color('Username: ' + config.username, 'green'))
 
 const client = mc.createClient({
-  host: host,
-  port: port,
-  username: user,
-  password: passwd
+  host: config.host,
+  port: config.port,
+  username: config.username,
+  password: config.password === ""?undefined:config.password
 })
-
-client.on('kick_disconnect', function (packet) {
-  console.info(color('Kicked for ' + packet.reason, 'red'))
-  process.exit(1)
-})
-
 const chats = []
 
 client.on('connect', function () {
-  console.info(color('Successfully connected to ' + host + ':' + port, 'green'))
+    console.info(color('Successfully connected to ' + config.host + ':' + config.port, 'green'))
 })
 
 client.on('disconnect', function (packet) {
-  console.log('disconnected: ' + packet.reason)
+  console.info(color('Disconnected: ' + packet.reason))
 })
 
-client.on('end', function () {
-  console.log('Connection lost')
-  process.exit()
-})
-
-client.on('error', function (err) {
-  console.log('Error occured')
-  console.log(err)
-  process.exit(1)
-})
-
-client.on('state', function (newState) {
-  if (newState === states.PLAY) {
-    chats.forEach(function (chat) {
-      client.write('chat', { message: chat })
-    })
+mcClient(client, chats, states, function(type, msg, style){
+  style = style || 'white'
+  switch(type){
+    case 'log':
+      console.log(color(msg, style))
+    break;
+    case 'info':
+      console.info(color(msg, style))
+    break;
+    default:
+      console.log(color(msg, style))
+    break;
   }
+  io.sockets.emit('mc_message', msg);
 })
 
-rl.on('line', function (line) {
-  if (line === '') {
-    return
-  } else if (line === '/quit') {
-    console.info('Disconnected from ' + host + ':' + port)
-    client.end()
-    return
-  } else if (line === '/end') {
-    console.info('Forcibly ended client')
-    process.exit(0)
-  }
-  if (!client.write('chat', { message: line })) {
-    chats.push(line)
-  }
-})
+server.listen(port, () => {
+  console.log(color('Server listening at port '+ port, 'green'));
+});
 
-client.on('chat', function (packet) {
-  const j = JSON.parse(packet.message)
-  const chat = parseChat(j, {})
-  console.info(chat)
-})
+// Routing
+app.use(express.static(path.join(__dirname, 'public')));
 
-function parseChat (chatObj, parentState) {
-  function getColorize (parentState) {
-    let myColor = ''
-    if ('color' in parentState) myColor += colors[parentState.color] + '+'
-    if (parentState.bold) myColor += 'bold+'
-    if (parentState.underlined) myColor += 'underline+'
-    if (parentState.obfuscated) myColor += 'obfuscated+'
-    if (myColor.length > 0) myColor = myColor.slice(0, -1)
-    return myColor
-  }
+// Chatroom
 
-  if (typeof chatObj === 'string') {
-    return color(chatObj, getColorize(parentState))
-  } else {
-    let chat = ''
-    if ('color' in chatObj) parentState.color = chatObj.color
-    if ('bold' in chatObj) parentState.bold = chatObj.bold
-    if ('italic' in chatObj) parentState.italic = chatObj.italic
-    if ('underlined' in chatObj) parentState.underlined = chatObj.underlined
-    if ('strikethrough' in chatObj) parentState.strikethrough = chatObj.strikethrough
-    if ('obfuscated' in chatObj) parentState.obfuscated = chatObj.obfuscated
+var numUsers = 0;
 
-    if ('text' in chatObj) {
-      chat += color(chatObj.text, getColorize(parentState))
-    } else if ('translate' in chatObj && dictionary[chatObj.translate] !== undefined) {
-      const args = [dictionary[chatObj.translate]]
-      chatObj.with.forEach(function (s) {
-        args.push(parseChat(s, parentState))
-      })
+io.on('connection', (socket) => {
+  var addedUser = false;
 
-      chat += color(util.format.apply(this, args), getColorize(parentState))
+  // when the client emits 'new message', this listens and executes
+  socket.on('new message', (line) => {
+    if (line === '') {
+      return
+    // } else if (line === '/quit') {
+    //   console.info('Disconnected from ' + config.host + ':' + config.port)
+    //   client.end()
+    //   return
+    // } else if (line === '/end') {
+    //   console.info('Forcibly ended client')
+    //   process.exit(0)
     }
-    if (chatObj.extra) {
-      chatObj.extra.forEach(function (item) {
-        chat += parseChat(item, parentState)
-      })
+    if(socket.authorized){
+      if (!client.write('chat', { message: line })) {
+        chats.push(line)
+      }
+    } else return
+  });
+
+  // when the client emits 'add user', this listens and executes
+  socket.on('login', (password) => {
+    if(password !== config.webPass){
+      socket.disconnect(true)
+    } else {
+      socket.authorized = true
+      socket.emit('login', { username: config.username })
     }
-    return chat
-  }
-}
+  });
+
+  // when the user disconnects.. perform this
+  socket.on('disconnect', () => {
+    if (addedUser) {
+      --numUsers;
+
+      // echo globally that this client has left
+      socket.broadcast.emit('user left', {
+        username: socket.username,
+        numUsers: numUsers
+      });
+    }
+  });
+});
