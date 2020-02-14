@@ -13,6 +13,7 @@ function handleMessage(line){
 }
 
 function loadSocketIO(io){
+  const passwd = process.env.PASSWD || config.WebServer.accessPassword
   io.on('connection', (socket) => {
     const address = socket.request.connection.remoteAddress
     logger.debug(logSystem, 'Socket.IO', `User connected IP: ${address}`)
@@ -23,7 +24,7 @@ function loadSocketIO(io){
     });
 
     socket.on('login', (password) => {
-      if(password !== config.WebServer.accessPassword){
+      if(password !== passwd){
         logger.warning(logSystem, 'Socket.IO', `User IP: ${address} Wrong password! Denied!`)
         socket.disconnect(true)
       } else {
