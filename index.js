@@ -61,7 +61,7 @@ function startMCClient(){
         )
         setTimeout(function(){
             startMCClient()
-        }, 2000)
+        }, 30000)
     })
 }
 
