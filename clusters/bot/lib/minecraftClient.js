@@ -30,6 +30,7 @@ const handler = (client, chats, states, callback) => {
 
   client.on('end', () => {
     callback('status', 'Connection lost')
+    process.exit()
   })
 
   client.on('error', (err) => {
