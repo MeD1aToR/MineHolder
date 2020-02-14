@@ -1,6 +1,8 @@
 function handleMessage(line){
   if (line === '') {
     return
+  if (line[0] === '/')
+    return
   // } else if (line === '/quit') {
   //   console.info('Disconnected from ' + config.host + ':' + config.port)
   //   client.end()
@@ -31,6 +33,8 @@ function loadSocketIO(io){
         socket.authorized = true
         logger.debug(logSystem, 'Socket.IO', `User IP: ${address} Success authenticate!`)
         socket.emit('login', { username: config.MCClient.username })
+        process.send({type: 'Aternos.getPlayers', data: {} })
+        
       }
     });
 

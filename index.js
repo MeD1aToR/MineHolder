@@ -1,6 +1,7 @@
 const cluster = require('cluster')
 const fs = require('fs')
 const path = require('path')
+const Aternos = require('clusters/aternos')
 const MCClient = require('clusters/bot')
 const WEBServer = require('clusters/web')
 
@@ -16,6 +17,9 @@ if(cluster.isWorker){
       break        
     case 'WEBServer':
       new WEBServer()
+      break
+    case 'Aternos':
+      new Aternos()
       break
     default:
       break
@@ -90,7 +94,33 @@ function startWEBServer(){
     })
 }
 
+function spawnAternos(){
+  startAternos()
+}
+
+function startAternos(){
+    let worker = cluster.fork({
+        workerType: 'Aternos',
+        config: JSON.stringify(config)
+    })
+    worker.type = 'Aternos'
+    worker.on('message', function(msg) {
+        handleMessage(msg)
+    }).on('exit', function(code, signal){
+        console.error(
+            new Date().toUTCString(), 
+            '[MAIN]', 
+            'Aternos', 
+            'Process process died, spawning replacement...'
+        )
+        setTimeout(function(){
+            startAternos()
+        }, 30000)
+    })
+}
+
 if(cluster.isMaster){
+  spawnAternos()
   spawnMCClient()
   spawnWEBServer()
 }

@@ -20,11 +20,14 @@ function serverStart(){
     const { type, data } = message;
     switch(type){
       case 'messageSended':
-        const { line } = data;
-        io.sockets.emit('mc_message', line);
-        break
+        io.sockets.emit('mc_message', JSON.stringify(data));
+      break
+      case 'updatePlayers':
+        const { players } = data;
+        io.sockets.emit('updatePlayers', JSON.stringify(players));
+      break
       default:
-        break
+      break
     }
   })
 }

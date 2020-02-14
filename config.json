@@ -1,8 +1,11 @@
 {
+  "Aternos": {
+    "enabled": true
+  },
   "MCClient": {
     "host": "forquest.aternos.me",
     "port": 25565,
-    "username": "_HOLDER_",
+    "username": "med1ator",
     "password": ""
   },
   "WebServer": {

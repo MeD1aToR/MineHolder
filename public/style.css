@@ -109,6 +109,10 @@ ul {
   text-align: center;
 }
 
+.log.welcome {
+  white-space: pre-line;
+}
+
 /* Messages */
 
 .chatArea {

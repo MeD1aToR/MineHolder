@@ -4,7 +4,7 @@ const util = require('util')
 
 const dictionary = require('./dictionary')
 
-const parseChat = function(chatObj, parentState) {
+const parseChat = function(chatObj, parentState, getObject) {
 
   function getColorize (parentState) {
     let myColor = ''
@@ -36,6 +36,7 @@ const parseChat = function(chatObj, parentState) {
       })
 
       chat += color(util.format.apply(this, args), getColorize(parentState))
+      if(chatObj.translate === 'chat.type.text' && getObject) return { username: args[1], message: args[2] }
     }
     if (chatObj.extra) {
       chatObj.extra.forEach(function (item) {

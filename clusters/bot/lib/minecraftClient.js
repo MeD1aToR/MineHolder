@@ -12,6 +12,7 @@ var uuidToUsername = {}
 var entities = {}
 var initial = true
 var sayNight = false
+var sayDay = false
 var time = {
   day: null,
   age: null
@@ -26,6 +27,7 @@ const handler = (client, chats, states, callback) => {
 
   client.on('kick_disconnect', (packet) => {
     callback('status', 'Kicked for ' + packet.reason, 'red')
+    process.exit()
   })
 
   client.on('end', () => {
@@ -36,6 +38,7 @@ const handler = (client, chats, states, callback) => {
   client.on('error', (err) => {
     callback('status', 'Error occured')
     callback('status', err)
+    process.exit()
   })
 
   client.on('state', (newState) => {
@@ -55,8 +58,8 @@ const handler = (client, chats, states, callback) => {
 
   client.on('chat', (packet) => {
     const j = JSON.parse(packet.message)
-    const chat = parseChat(j, {})
-    if(chat.length) callback('message', chat)
+    const chat = parseChat(j, {}, true)
+    if((typeof chat === 'string' && chat.length) || (typeof chat === 'object' && chat.message.length)) callback('message', chat)
   })
 
   client.on('named_entity_spawn', (packet) => {
@@ -78,11 +81,10 @@ const handler = (client, chats, states, callback) => {
     // for day we ignore the big number since it is always 0
     time.day = Math.abs(packet.time[1]) % 24000
     time.age = longToNumber(packet.age)
-    if(time.day > 12999 && time.day < 13500 && !sayNight){
-      sayNight = true
-      onNight(formatTime24(time.day))
-    }
+    if(time.day > 12999 && time.day < 13500 && !sayNight) onNight(formatTime24(time.day))
+    if(time.day > 500 && time.day < 1000 && !sayDay) onDay(formatTime24(time.day))
     if(time.day > 13500 || time.day < 12999) sayNight = false
+    if(time.day > 1000 || time.day < 500) sayDay = false
   })
 
   client.on('entity_metadata', (packet) => {
@@ -159,7 +161,13 @@ const handler = (client, chats, states, callback) => {
   })
 
   function onNight(time){
+    sayNight = true
     client.write('chat', { message: `Ребзя, время ${time}! Спать пора!` })
+  }
+
+  function onDay(time){
+    sayDay = true
+    client.write('chat', { message: `Ребзя, время ${time}! Пришло время строить коробки!` })
   }
 
   function onWelcome(players){
@@ -215,9 +223,10 @@ const formatTime24 = (ticks) => {
   let hours = Math.floor(ticks / ticksPerHour)
   let minutes = Math.floor((ticks - hours * ticksPerHour) / ticksPerMinute)
   let seconds = Math.floor((ticks - (hours * ticksPerHour + minutes * ticksPerMinute)) / ticksPerSecond)
+  hours = hours + 6
   if(hours < 10) hours = `0${hours}`
   if(minutes < 10) minutes = `0${minutes}`
   if(seconds < 10) seconds = `0${seconds}`
-  return `${hours+6}:${minutes}:${seconds}`
+  return `${hours}:${minutes}:${seconds}`
 }
 module.exports=handler

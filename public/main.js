@@ -53,22 +53,18 @@ $(function() {
   }
 
   // Log a message
-    const log = (message, options) => {
+  const log = (message, options) => {
     var $el = $('<li>').addClass('log').text(message);
     addMessageElement($el, options);
   }
 
   // Adds the visual chat message to the message list
   const addChatMessage = (data, options) => {
-    if (typeof data === 'string') {
-      data = {
-        username: "",
-        message: data
-      }
-    }
+    if (typeof data === 'string') data = { username: "", message: data }
+    options = options || {};
+    var $usernameDiv = $('<span class="username"/>').text(data.username).css('color', getUsernameColor(data.username));
     var $messageBodyDiv = $('<span class="messageBody">').text(data.message);
-
-    var $messageDiv = $('<li class="message"/>').data('username', data.username || "").append($messageBodyDiv);
+    var $messageDiv = $('<li class="message"/>').data('username', data.username).append($usernameDiv, $messageBodyDiv);
 
     addMessageElement($messageDiv, options);
   }
@@ -98,9 +94,15 @@ $(function() {
       $el.hide().fadeIn(FADE_TIME);
     }
     if (options.prepend) {
-      $messages.prepend($el);
+      if (options.welcome) {
+        $('.log.welcome').remove()
+        $el.addClass('welcome')
+        $el.append('<span class="players"></span>')
+        $messages.prepend($el);
+      }
+      $el.insertAfter($('.log.welcome'));
     } else {
-      $messages.append($el);
+      $messages.append($el)
     }
     $messages[0].scrollTop = $messages[0].scrollHeight;
   }
@@ -111,15 +113,15 @@ $(function() {
   }
 
   // Gets the color of a username through our hash function
-  const getUsernameColor = (username) => {
+  const getUsernameColor = (username = "") => {
     // Compute hash code
-    // var hash = 7;
-    // for (var i = 0; i < username.length; i++) {
-    //    hash = username.charCodeAt(i) + (hash << 5) - hash;
-    // }
-    // // Calculate color
-    // var index = Math.abs(hash % COLORS.length);
-    return COLORS[0];
+    var hash = 7;
+    for (var i = 0; i < username.length; i++) {
+       hash = username.charCodeAt(i) + (hash << 5) - hash;
+    }
+    // Calculate color
+    var index = Math.abs(hash % COLORS.length);
+    return COLORS[index];
   }
 
   // Keyboard events
@@ -156,15 +158,25 @@ $(function() {
     username = data.username
     connected = true;
     // Display the welcome message
-    var message = "– Welcome to MineHolder Web Chat –";
+    var message = `– Welcome to MineHolder Web Chat –\n`;
     log(message, {
-      prepend: true
+      prepend: true,
+      welcome: true
     });
   });
 
   // Whenever the server emits 'new message', update the chat body
   socket.on('mc_message', (data) => {
-    addChatMessage(data);
+    addChatMessage(JSON.parse(data));
+  });
+
+  socket.on('updatePlayers', (data) => {
+    const players = JSON.parse(data)
+    let line = ''
+    players.forEach((elem, i) => {
+      line += `<span style="color: ${getUsernameColor(elem)}">${elem}${players.length - 1 === i?"":"&ensp;"}</span>`
+    })
+    $('.log.welcome .players').html(`Online: [&ensp;${line}&ensp;]`)
   });
 
   socket.on('disconnect', () => {
