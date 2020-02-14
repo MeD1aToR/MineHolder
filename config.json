@@ -1,7 +1,18 @@
 {
-  "host": "forquest.aternos.me",
-  "port": 25565,
-  "username": "_HOLDER_",
-  "password": "",
-  "webPass": "name32"
+  "MCClient": {
+    "host": "forquest.aternos.me",
+    "port": 25565,
+    "username": "_HOLDER_",
+    "password": ""
+  },
+  "WebServer": {
+    "accessPassword": "wasd"
+  },
+  "logger": {
+    "logConsole": {
+      "enabled": true,
+      "logColors": true,
+      "logLevel": "debug"
+    }
+  }
 }
