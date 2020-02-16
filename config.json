@@ -15,7 +15,7 @@
     "logConsole": {
       "enabled": true,
       "logColors": true,
-      "logLevel": "debug"
+      "logLevel": "info"
     }
   }
 }

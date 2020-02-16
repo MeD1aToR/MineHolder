@@ -57,7 +57,7 @@ function mcClientStart(){
     })
     
     client.on('connect', function () {
-      logger.debug(logSystem, logComponent, `Successfully connected to ${config.MCClient.host}:${config.MCClient.port}`)
+      logger.info(logSystem, logComponent, `Successfully connected to ${config.MCClient.host}:${config.MCClient.port}`)
     })
 
     client.on('disconnect', function (packet) {
@@ -91,7 +91,7 @@ function mcClientStart(){
 }
 
 module.exports = function(){
-  global.logSystem = 'MCClient'
+  global.logSystem = 'BOT'
   global.config = JSON.parse(process.env.config)
   global.logger = new customLogger(config.logger)
 

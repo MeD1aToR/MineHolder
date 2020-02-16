@@ -101,7 +101,7 @@ function handleMessage({ type, message }){
           }
         break
         default:
-          logger.debug(logSystem, 'Status', `DEBUG: ${JSON.stringify(msgData)}`)
+          logger.warning(logSystem, 'Status', `DEBUG: ${JSON.stringify(msgData)}`)
         break
       }
     break
@@ -114,7 +114,7 @@ function handleMessage({ type, message }){
 
 function onStatusUpdate(newStatus){
   if(status !== newStatus) {
-    logger.debug(logSystem, 'Status', `Updating: ${getStatusString(status)} => ${getStatusString(newStatus)}`)
+    logger.info(logSystem, 'Status', `Updating: ${getStatusString(status)} => ${getStatusString(newStatus)}`)
     status = newStatus
     process.send({type: 'MCClient.statusUpdate', data: { status: status }})
   }
@@ -170,7 +170,7 @@ function getStatusGrabber(){
 }
 
 function loadWebSocket(connection) {
-  logger.debug(logSystem, 'loadWebSocket', `Aternos WebSocket Connected`)
+  logger.info(logSystem, 'loadWebSocket', `Aternos WebSocket Connected`)
   getStatusGrabber()
   connection.on('error', (error) => logger.error(logSystem, 'loadWebSocket', `Connection Error: ${error.toString()}`))
   connection.on('close', (error) => logger.error(logSystem, 'loadWebSocket', `Connection Closed: ${error.toString()}`))

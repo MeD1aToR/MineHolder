@@ -13,7 +13,7 @@ function serverStart(){
   app.use(express.static(path.join(__base, 'public')));
   loadSocketIO(io)
   server.listen(port, () => { 
-    logger.debug(logSystem, 'serverStart', `Server listening at port ${port}`)
+    logger.info(logSystem, 'serverStart', `Server listening at port ${port}`)
   });
   
   process.on('message', function(message) {

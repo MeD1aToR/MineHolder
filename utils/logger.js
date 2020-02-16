@@ -4,7 +4,7 @@ const colors = require('colors');
 var severityToColor = function(severity, text) {
   switch(severity) {
     case 'debug': return text.green;
-    case 'info': return text.cyan.underline;
+    case 'info': return text.cyan;
     case 'warning': return text.yellow;
     case 'error': return text.red;
     default:
