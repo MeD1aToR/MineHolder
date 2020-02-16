@@ -101,6 +101,7 @@ function handleMessage({ type, message }){
           }
         break
         default:
+          logger.debug(logSystem, 'Status', `DEBUG: ${JSON.stringify(msgData)}`)
         break
       }
     break

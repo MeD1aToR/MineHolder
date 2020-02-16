@@ -1,7 +1,6 @@
 const Entity = require('prismarine-entity')
 const parseChat = require('./parseChat')
-const welcome = require('./welcome')
-const bye = require('./bye')
+const prepend = require('./prepend')
 
 const ticksPerHour = 1000;
 const ticksPerMinute = (1000 / 60);
@@ -89,10 +88,10 @@ const handler = (client, chats, states, callback) => {
 
   client.on('entity_metadata', (packet) => {
     const entity = fetchEntity(packet.entityId)
-    if(packet.metadata instanceof Array){
+    if(packet.metadata instanceof Array && packet.metadata.length !== 0 && entity.type === 'player'){
       packet.metadata.forEach((elem) => {
         if(elem.type === 18 && elem.value === 2){ // Slepping
-          client.write('chat', { message: `Спокойной ночи, ${entity.username}!` })
+          client.write('chat', { message: `${prepend.sleep[randomInteger(0, prepend.sleep.length-1)]}, ${entity.username}!` })
         }
       })
     }
@@ -162,26 +161,26 @@ const handler = (client, chats, states, callback) => {
 
   function onNight(time){
     sayNight = true
-    client.write('chat', { message: `Ребзя, время ${time}! Спать пора!` })
+    client.write('chat', { message: `Время ${time}! Спать пора!` })
   }
 
   function onDay(time){
     sayDay = true
-    client.write('chat', { message: `Ребзя, время ${time}! Пришло время строить коробки!` })
+    client.write('chat', { message: `Время ${time}! Пришло время строить коробки!` })
   }
 
   function onWelcome(players){
-    client.write('chat', { message: `Ребзя, [ ${players.filter(name => name !== config.MCClient.username).join(', ')} ], приветствую! Я снова с вами ^_^` })
+    client.write('chat', { message: `[ ${players.filter(name => name !== config.MCClient.username).join(', ')} ], приветствую! Я снова с вами ^_^` })
   }
 
   function onPlayerJoin({ username }){
     if (username === config.MCClient.username) return
-    client.write('chat', { message: `${welcome[randomInteger(0, welcome.length-1)]}, ${username}! С возвращением!` })
+    client.write('chat', { message: `${prepend.welcome[randomInteger(0, prepend.welcome.length-1)]}, ${username}! С возвращением!` })
   }
 
   function onPlayerLeft({ username }){
     if (username === config.MCClient.username) return
-    client.write('chat', { message: `${bye[randomInteger(0, welcome.length-1)]}, ${username}!` })
+    client.write('chat', { message: `${prepend.bye[randomInteger(0, prepend.welcome.length-1)]}, ${username}!` })
   }
 
 }
@@ -227,6 +226,6 @@ const formatTime24 = (ticks) => {
   if(hours < 10) hours = `0${hours}`
   if(minutes < 10) minutes = `0${minutes}`
   if(seconds < 10) seconds = `0${seconds}`
-  return `${hours}:${minutes}:${seconds}`
+  return `${hours}:${minutes}`
 }
 module.exports=handler
