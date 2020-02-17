@@ -1,9 +1,12 @@
 const request = require('request')
 const cheerio = require('cheerio')
+
 const asec = require('./asec')
+const requests = require('./requests')
 
 const statusCodes = ["Offline", "Online", "Queueing", "Loading", "Starting", "Countdown", "Stopping", "Saving"];
 var status = 0
+var autoReboot = true
 // 0 - Offline, 1 - Online, 2 - Queueing, 3 - Loading, 4 - Starting, 5 - Countdown, 6 - Stopping, 6 - Saving
 var players = []
 
@@ -28,28 +31,7 @@ function handleMessage({ type, message }){
           if(msgData.class === "queueing"){
             onStatusUpdate(2)
             if(msgData.pending === "ready"){
-              const SEC = asec()
-              request({
-                url: `https://aternos.org/panel/ajax/confirm.php?ASEC=${SEC.key}:${SEC.value}`,
-                method: 'GET',
-                headers: {
-                  Cookie: [
-                    `ATERNOS_SESSION=${process.env.ATERNOS_SESSION}`,
-                    `ATERNOS_SEC_${SEC.key}=${SEC.value}`
-                  ],
-                  referer: "https://aternos.org/server/"
-                }
-              }, (err, res, body) => {
-                if (err) return logger.error(logSystem, 'Confirm', `Error: ${JSON.stringify(err)}`)
-                if (body) {
-                  try {
-                    const res = JSON.parse(body)
-                  } catch(err){
-                    return logger.error(logSystem, 'Confirm', `Body parse error: ${JSON.stringify(err)}`)
-                  }
-                  if (res && res.success) logger.debug(logSystem, 'Confirm', `Confirm starting server SUCCESS!`)
-                }
-              })
+              requests.sendConfirm()
             }
           }
         break
@@ -74,30 +56,11 @@ function handleMessage({ type, message }){
           }
         break
         case "0":
-          if(msgData.class === "offline"){
+          if (msgData.class === "offline"){
             onStatusUpdate(0)
-            const SEC = asec()
-            request({
-              url: `https://aternos.org/panel/ajax/start.php?headstart=0&ASEC=${SEC.key}:${SEC.value}`,
-              method: 'GET',
-              headers: {
-                Cookie: [
-                  `ATERNOS_SESSION=${process.env.ATERNOS_SESSION}`,
-                  `ATERNOS_SEC_${SEC.key}=${SEC.value}`
-                ],
-                referer: "https://aternos.org/server/"
-              }
-            }, (err, res, body) => {
-              if (err) return logger.error(logSystem, 'Starting', `Error: ${JSON.stringify(err)}`)
-              if (body) {
-                try {
-                  const res = JSON.parse(body)
-                } catch(err){
-                  return logger.error(logSystem, 'Starting', `Body parse error: ${JSON.stringify(err)}`)
-                }
-                if (res && res.success) logger.debug(logSystem, 'Starting', `Starting Aternos server SUCCESS!`)
-              }
-            })
+            if (autoReboot) {
+              requests.sendStart()
+            }
           }
         break
         default:
@@ -117,34 +80,14 @@ function onStatusUpdate(newStatus){
     logger.info(logSystem, 'Status', `Updating: ${getStatusString(status)} => ${getStatusString(newStatus)}`)
     status = newStatus
     process.send({type: 'MCClient.statusUpdate', data: { status: status }})
+    process.send({type: 'WEBServer.statusUpdate', data: { status: status }})
   }
 }
 
 const getStatusString = (code) => statusCodes[code % statusCodes.length]
-
-function restart(){
-  const SEC = asec()
-  request({
-    url: `https://aternos.org/panel/ajax/restart.php?headstart=0&ASEC=${SEC.key}:${SEC.value}`,
-    method: 'GET',
-    headers: {
-      Cookie: [
-        `ATERNOS_SESSION=${process.env.ATERNOS_SESSION}`,
-        `ATERNOS_SEC_${SEC.key}=${SEC.value}`
-      ],
-      referer: "https://aternos.org/server/"
-    }
-  }, (err, res, body) => {
-    if (err) return logger.error(logSystem, 'Restarting', `Error: ${JSON.stringify(err)}`)
-    if (body) {
-      try {
-        const res = JSON.parse(body)
-      } catch(err){
-        return logger.error(logSystem, 'Restarting', `Body parse error: ${JSON.stringify(err)}`)
-      }
-      if (res && res.success) logger.debug(logSystem, 'Restarting', `Restart Aternos server SUCCESS!`)
-    }
-  })
+const setAutoReboot = (state) => {
+  autoReboot = state
+  process.send({type: 'WEBServer.autoRebootUpdate', data: { state: autoReboot }})
 }
 
 function getStatusGrabber(){
@@ -186,6 +129,24 @@ function loadWebSocket(connection) {
       break
       case 'mcStatusRequest':
         process.send({type: 'MCClient.statusResponse', data: { status: status }})
+      break
+      case 'webStatusRequest':
+        process.send({type: 'WEBServer.statusUpdate', data: { status: status }})
+      break
+      case 'sendStart':
+        requests.sendStart((status) => process.send({type: 'WEBServer.controlRes', data: { type: 'start', status: status }}))
+      break
+      case 'sendStop':
+        requests.sendStop((status) => process.send({type: 'WEBServer.controlRes', data: { type: 'stop', status: status }}))
+      break
+      case 'sendRestart':
+        requests.sendRestart((status) => process.send({type: 'WEBServer.controlRes', data: { type: 'restart', status: status }}))
+      break
+      case 'setAutoReboot':
+        setAutoReboot(JSON.parse(data).state)
+      break
+      case 'getAutoReboot':
+        process.send({type: 'WEBServer.autoRebootUpdate', data: { state: autoReboot }})
       break
       default:
       break

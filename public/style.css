@@ -92,6 +92,44 @@ ul {
   display: none;
 }
 
+.controls {
+  position: fixed;
+  right: 15px;
+  bottom: 67.5px;
+  padding-left: 0;
+  margin: -7.5px 0;
+  opacity: .5;
+}
+
+.controls:hover {
+  opacity: 1;
+}
+
+.controls > li {
+  width: 120px;
+  height: 30px;
+  background: gray;
+  padding: 5px;
+  margin: 7.5px 0;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.controls > li.loading {
+  border: 2px dashed blue;
+  background: transparent;
+  color: black;
+}
+
+.controls > li.success, .rebootState.enabled {
+  background: green;
+}
+.controls > li.error, .rebootState.disabled {
+  background: red;
+}
+
 /* Font */
 
 .messages {

@@ -25,6 +25,26 @@ function loadSocketIO(io){
       } else return
     });
 
+    socket.on('setAutoRebootState', (data) => {
+      if(socket.authorized) process.send({type: 'Aternos.setAutoReboot', data })
+      else return
+    })
+
+    socket.on('sendStart', (data) => {
+      if(socket.authorized) process.send({type: 'Aternos.sendStart', data: {} })
+      else return
+    })
+
+    socket.on('sendStop', (data) => {
+      if(socket.authorized) process.send({type: 'Aternos.sendStop', data: {} })
+      else return
+    })
+
+    socket.on('sendRestart', (data) => {
+      if(socket.authorized) process.send({type: 'Aternos.sendRestart', data: {} })
+      else return
+    })
+
     socket.on('login', (password) => {
       if(password !== passwd){
         logger.warning(logSystem, 'Socket.IO', `User IP: ${address} Wrong password! Denied!`)
@@ -34,7 +54,8 @@ function loadSocketIO(io){
         logger.debug(logSystem, 'Socket.IO', `User IP: ${address} Success authenticate!`)
         socket.emit('login', { username: config.MCClient.username })
         process.send({type: 'Aternos.getPlayers', data: {} })
-        
+        process.send({type: 'Aternos.webStatusRequest', data: {} })
+        process.send({type: 'Aternos.getAutoReboot', data: {} })
       }
     });
 

@@ -26,6 +26,15 @@ function serverStart(){
         const { players } = data;
         io.sockets.emit('updatePlayers', JSON.stringify(players));
       break
+      case 'autoRebootUpdate':
+        io.sockets.emit('updateAutoRebootState', JSON.stringify(data));
+      break
+      case 'controlRes':
+        io.sockets.emit('controlRes', JSON.stringify(data));
+      break
+      case 'statusUpdate':
+        io.sockets.emit('status', JSON.stringify(data));
+      break
       default:
       break
     }

@@ -5,7 +5,7 @@ $(function() {
     '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
     '#3b88eb', '#3824aa', '#a700ff', '#d300e7'
   ];
-
+  var STATUSES = ["Offline", "Online: ", "Queueing...", "Loading...", "Starting...", "Countdown: ", "Stopping...", "Saving..."]
   // Initialize variables
   var $window = $(window);
   var $usernameInput = $('.usernameInput'); // Input for username
@@ -15,13 +15,22 @@ $(function() {
   var $loginPage = $('.login.page'); // The login page
   var $chatPage = $('.chat.page'); // The chatroom page
 
+  var $rebootState = $('.rebootState');
+  var stateChangeLock = false
+  var $start = $('li.start');
+  var $stop = $('li.stop');
+  var $restart = $('li.restart');
+
   // Prompt for setting a username
   var username;
   var password;
   var connected = false;
+  var serverStatus = 0;
   var $currentInput = $usernameInput.focus();
 
   var socket = io();
+
+  const capitalizeFLetter = (string) => string[0].toUpperCase() + string.slice(1);
 
   // Sets the client's password
   const AUTH = () => {
@@ -97,6 +106,7 @@ $(function() {
       if (options.welcome) {
         $('.log.welcome').remove()
         $el.addClass('welcome')
+        $el.append('<span class="status"></span>')
         $el.append('<span class="players"></span>')
         $messages.prepend($el);
       }
@@ -151,6 +161,32 @@ $(function() {
     $inputMessage.focus();
   });
 
+  $rebootState.click(() => {
+    if (stateChangeLock !== true) {
+      if ($rebootState.attr('state') === "true")
+        socket.emit('setAutoRebootState', JSON.stringify({ state: false }));
+      else
+        socket.emit('setAutoRebootState', JSON.stringify({ state: true }));
+      stateChangeLock = true
+      $rebootState.removeClass('enabled disabled')
+    }
+  })
+  
+  function sendAction(type) {
+    return function(event) {
+      socket.emit(`send${capitalizeFLetter(type)}`, {});
+      $(event.target).addClass('loading')
+    }
+  }
+
+  function addClassCallback(el, status) {
+    el.removeClass('loading').addClass(status)
+    setTimeout(function() { el.removeClass(status) }, 2000)
+  }
+
+  $start.click(sendAction('start'));
+  $stop.click(sendAction('stop'));
+  $restart.click(sendAction('restart'));
   // Socket events
 
   // Whenever the server emits 'login', log the login message
@@ -176,8 +212,42 @@ $(function() {
     players.forEach((elem, i) => {
       line += `<span style="color: ${getUsernameColor(elem)}">${elem}${players.length - 1 === i?"":"&ensp;"}</span>`
     })
-    $('.log.welcome .players').html(`Online: [&ensp;${line}&ensp;]`)
+    $('.log.welcome .players').html(`[&ensp;${line}&ensp;]`)
   });
+
+  socket.on('updateAutoRebootState', (data) => {
+    const { state } = JSON.parse(data)
+    $('.rebootState')
+      .addClass(state?'enabled':'disabled')
+      .removeClass(!state?'enabled':'disabled')
+      .attr('state', state.toString())
+    stateChangeLock = false
+  })
+
+  socket.on('status', (data) => {
+    const { status } = JSON.parse(data)
+    serverStatus = status
+    $('.log.welcome .status').html(`${STATUSES[serverStatus]}`)
+    if (serverStatus !== 1 && serverStatus !== 5) $('.log.welcome .players').html('')
+  })
+  
+  socket.on('controlRes', (data) => {
+    const { type, status } = JSON.parse(data)
+    switch(type){
+      case 'start':
+        if (status) addClassCallback($start, 'success')
+        else addClassCallback($start, 'error')
+      break
+      case 'stop':
+        if (status) addClassCallback($stop, 'success')
+        else addClassCallback($stop, 'error')
+      break
+      case 'restart':
+        if (status) addClassCallback($restart, 'success')
+        else addClassCallback($restart, 'error')
+      break
+    }
+  })
 
   socket.on('disconnect', () => {
     log('you have been disconnected');
