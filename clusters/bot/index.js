@@ -40,6 +40,9 @@ function mcClientStart(){
         clearInterval(resendStatusReq)
         if ((data.status === 1 || data.status === 5) && !connectingNow) connecting()
       break
+      case 'restart':
+        process.send({type: 'WEBServer.controlRes', data: { type: 'restartBot', status: true }})
+        process.exit()
       default:
         break
     }

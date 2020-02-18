@@ -45,6 +45,11 @@ function loadSocketIO(io){
       else return
     })
 
+    socket.on('sendRestartBot', (data) => {
+      if(socket.authorized) process.send({type: 'MCClient.restart', data: {} })
+      else return
+    })
+
     socket.on('login', (password) => {
       if(password !== passwd){
         logger.warning(logSystem, 'Socket.IO', `User IP: ${address} Wrong password! Denied!`)

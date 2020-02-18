@@ -20,6 +20,7 @@ $(function() {
   var $start = $('li.start');
   var $stop = $('li.stop');
   var $restart = $('li.restart');
+  var $restartBot = $('li.restartBot');
 
   // Prompt for setting a username
   var username;
@@ -187,6 +188,7 @@ $(function() {
   $start.click(sendAction('start'));
   $stop.click(sendAction('stop'));
   $restart.click(sendAction('restart'));
+  $restartBot.click(sendAction('restartBot'));
   // Socket events
 
   // Whenever the server emits 'login', log the login message
@@ -245,6 +247,10 @@ $(function() {
       case 'restart':
         if (status) addClassCallback($restart, 'success')
         else addClassCallback($restart, 'error')
+      break
+      case 'restartBot':
+        if (status) addClassCallback($restartBot, 'success')
+        else addClassCallback($restartBot, 'error')
       break
     }
   })
