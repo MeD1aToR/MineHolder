@@ -61,6 +61,7 @@ const handler = (client, chats, states, callback) => {
     if (typeof chat === 'string' && chat.length && chat[0] === '<') { // Dirty fix
       const parsedString = (/^<([^<>]+)>\s(.*)$/gm).exec(chat)
       callback('message', { username: parsedString[1], message: parsedString[2] })
+      if (parsedString[2][0] === '@') handleCommand(parsedString[2])
     } else if (typeof chat === 'object' && chat.message.length) callback('message', chat)
   })
 
@@ -162,14 +163,25 @@ const handler = (client, chats, states, callback) => {
     })
   })
 
-  function onNight(time){
-    sayNight = true
-    client.write('chat', { message: `Время ${time}! Спать пора!` })
+  function handleCommand(message){
+    switch(message.slice(1)){
+      case 'time':
+        client.write('chat', { message: `Время ${formatTime24(time.day)}!` })
+      break
+      default:
+        client.write('chat', { message: `[ ${message.slice(1)} ] ЧТО ЭТО ЗА СЛОВО?!` })
+      break
+    }
   }
 
-  function onDay(time){
+  function onNight(timeDay){
+    sayNight = true
+    client.write('chat', { message: `Время ${timeDay}! Спать пора!` })
+  }
+
+  function onDay(timeDay){
     sayDay = true
-    client.write('chat', { message: `Время ${time}! Пришло время строить коробки!` })
+    client.write('chat', { message: `Время ${timeDay}! Пришло время строить коробки!` })
   }
 
   function onWelcome(players){
