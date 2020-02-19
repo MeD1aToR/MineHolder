@@ -58,7 +58,10 @@ const handler = (client, chats, states, callback) => {
   client.on('chat', (packet) => {
     const j = JSON.parse(packet.message)
     const chat = parseChat(j, {}, true)
-    if((typeof chat === 'string' && chat.length) || (typeof chat === 'object' && chat.message.length)) callback('message', chat)
+    if (typeof chat === 'string' && chat.length && chat[0] === '<') { // Dirty fix
+      const parsedString = (/^<([^<>]+)>\s(.*)$/gm).exec(chat)
+      callback('message', { username: parsedString[1], message: parsedString[2] })
+    } else if (typeof chat === 'object' && chat.message.length) callback('message', chat)
   })
 
   client.on('named_entity_spawn', (packet) => {
