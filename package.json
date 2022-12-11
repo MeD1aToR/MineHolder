@@ -16,7 +16,7 @@
     "cheerio": "^1.0.0-rc.3",
     "colors": "^1.4.0",
     "dateformat": "^3.0.3",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "minecraft-protocol": "^1.10.0",
     "node-json-minify": "^1.0.0",
     "prismarine-entity": "^0.2.0",
